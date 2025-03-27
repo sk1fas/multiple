@@ -1,144 +1,133 @@
 #!/bin/bash
 
-# Проверка наличия необходимых утилит, установка если отсутствует
-if ! command -v figlet &> /dev/null; then
-    echo "figlet не найден. Устанавливаем..."
-    sudo apt update && sudo apt install -y figlet
+# Цвета текста
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # Нет цвета (сброс цвета)
+
+# Проверка наличия curl и установка, если не установлен
+if ! command -v curl &> /dev/null; then
+    sudo apt update
+    sudo apt install curl -y
 fi
+sleep 1
 
-if ! command -v whiptail &> /dev/null; then
-    echo "whiptail не найден. Устанавливаем..."
-    sudo apt update && sudo apt install -y whiptail
-fi
+# Отображаем логотип
+curl -s https://raw.githubusercontent.com/sk1fas/logo-sk1fas/main/logo-sk1fas.sh | bash
 
-# Определяем цвета для удобства
-YELLOW="\e[33m"
-CYAN="\e[36m"
-BLUE="\e[34m"
-GREEN="\e[32m"
-RED="\e[31m"
-PINK="\e[35m"
-NC="\e[0m"
+# Меню
+echo -e "${YELLOW}Выберите действие:${NC}"
+echo -e "${CYAN}1) Установка ноды${NC}"
+echo -e "${CYAN}2) Проверка статуса ноды${NC}"
+echo -e "${CYAN}3) Удаление ноды${NC}"
 
-# Вывод приветственного текста с помощью figlet
+echo -e "${YELLOW}Введите номер:${NC} "
+read choice
 
-echo "===================================================================================================================================="
-echo "Хай! Начинаем установку необходимых библиотек, пока подпишись на мой Telegram для обновлений и поддержки: "
-echo ""
-echo "Sk1fasCrypto - https://t.me/Sk1fasCryptoJourney"
-echo "===================================================================================================================================="
-sleep 5
 
-# Определение функции анимации
-animate_loading() {
-    for ((i = 1; i <= 5; i++)); do
-        printf "\r${GREEN}Подгружаем меню${NC}."
-        sleep 0.3
-        printf "\r${GREEN}Подгружаем меню${NC}.."
-        sleep 0.3
-        printf "\r${GREEN}Подгружаем меню${NC}..."
-        sleep 0.3
-        printf "\r${GREEN}Подгружаем меню${NC}"
-        sleep 0.3
-    done
-    echo ""
-}
 
-# Вызов функции анимации
-animate_loading
-echo ""
+case $choice in
+    1)
+        echo -e "${BLUE}Устанавливаем ноду...${NC}"
 
-# Функция для установки ноды
-install_node() {
-    echo -e "${BLUE}Начинаем установку ноды...${NC}"
+        # Обновление и установка зависимостей
+        sudo apt update && sudo apt upgrade -y
 
-    # Обновление и установка зависимостей
-    sudo apt update -y && sudo apt upgrade -y
+        # Проверка архитектуры системы и выбор подходящего клиента
+        #echo -e "${BLUE}Проверяем архитектуру системы...${NC}"
+        #ARCH=$(uname -m)
+        #if [[ "$ARCH" == "x86_64" ]]; then
+            #CLIENT_URL="https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/MultipleForLinux.tar"
+        #elif [[ "$ARCH" == "aarch64" ]]; then
+            #CLIENT_URL="https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/MultipleForLinux.tar"
+        #else
+           #echo -e "${RED}Неподдерживаемая архитектура системы: $ARCH${NC}"
+            #exit 1
+        #fi
 
-    # Проверка архитектуры системы
-    ARCH=$(uname -m)
-    if [[ "$ARCH" == "x86_64" ]]; then
-        CLIENT_URL="https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/x64/multipleforlinux.tar"
-    elif [[ "$ARCH" == "aarch64" ]]; then
-        CLIENT_URL="https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/arm64/multipleforlinux.tar"
-    else
-        echo -e "${RED}Неподдерживаемая архитектура системы: $ARCH${NC}"
-        exit 1
-    fi
+        rm -f ~/install.sh ~/update.sh ~/start.sh
+        
+        # Скачиваем клиент
+        echo -e "${BLUE}Скачиваем клиент...${NC}"
+        wget https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/install.sh
+        source ./install.sh
 
-    # Скачиваем и распаковываем клиент
-    wget $CLIENT_URL -O multipleforlinux.tar
-    tar -xvf multipleforlinux.tar
-    cd multipleforlinux
+        # Распаковываем архив
+        echo -e "${BLUE}Обновляем...${NC}"
+        wget https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/update.sh
+        source ./update.sh
 
-    # Устанавливаем разрешения на выполнение
-    chmod +x ./multiple-cli
-    chmod +x ./multiple-node
+        # Переход в папку клиента
+        cd
+        cd multipleforlinux
 
-    # Добавляем клиент в системный PATH
-    echo "PATH=\$PATH:$(pwd)" >> ~/.bash_profile
-    source ~/.bash_profile
+        # Выдача разрешений на выполнение
+        #echo -e "${BLUE}Выдача разрешений...${NC}"
+        #chmod +x ./multiple-cli
+        #chmod +x ./multiple-node
 
-    # Запуск ноды
-    nohup ./multiple-node > output.log 2>&1 &
+        # Добавление директории в системный PATH
+        #echo -e "${BLUE}Добавляем директорию в системный PATH...${NC}"
+        #echo "PATH=\$PATH:$(pwd)" >> ~/.bash_profile
+        #source ~/.bash_profile
 
-    # Ввод данных аккаунта
-    echo -e "${YELLOW}Введите ваш Account ID:${NC}"
-    read IDENTIFIER
-    echo -e "${YELLOW}Установите ваш PIN:${NC}"
-    read PIN
+        # Запуск ноды
+        echo -e "${BLUE}Запускаем multiple-node...${NC}"
+        #nohup ./multiple-node > output.log 2>&1 &
+        wget https://mdeck-download.s3.us-east-1.amazonaws.com/client/linux/start.sh
+        source ./start.sh
 
-    # Привязка аккаунта
-    ./multiple-cli bind --bandwidth-download 100 --identifier $IDENTIFIER --pin $PIN --storage 200 --bandwidth-upload 100
+        # Ввод Account ID и PIN
+        echo -e "${YELLOW}Введите ваш Account ID:${NC}"
+        read IDENTIFIER
+        echo -e "${YELLOW}Установите ваш PIN:${NC}"
+        read PIN
 
-    # Проверка статуса
-    cd ~/multipleforlinux && ./multiple-cli status
-}
+        # Привязка аккаунта
+        echo -e "${BLUE}Привязываем аккаунт с ID: $IDENTIFIER и PIN: $PIN...${NC}"
+        multiple-cli bind --bandwidth-download 100 --identifier $IDENTIFIER --pin $PIN --storage 200 --bandwidth-upload 100
 
-# Функция для проверки статуса ноды
-check_status() {
-    echo -e "${BLUE}Проверка статуса ноды...${NC}"
-    cd ~/multipleforlinux && ./multiple-cli status
-}
-
-# Функция для удаления ноды
-remove_node() {
-    echo -e "${BLUE}Удаляем ноду...${NC}"
-
-    # Остановка процесса
-    pkill -f multiple-node
-
-    # Удаление файлов ноды
-    sudo rm -rf ~/multipleforlinux
-
-    echo -e "${GREEN}Нода успешно удалена!${NC}"
-}
-
-#!/bin/bash
-
-# Вывод меню действий
-CHOICE=$(whiptail --title "Меню действий" \
-    --menu "Выберите действие:" 15 50 4 \
-    "1" "Установка ноды" \
-    "2" "Проверка статуса ноды" \
-    "3" "Удаление ноды" \
-    "4" "Выход" \
-    3>&1 1>&2 2>&3)
-
-case $CHOICE in
-    1) 
-        install_node
+        # Заключительный вывод
+        echo -e "${PURPLE}-----------------------------------------------------------------------${NC}"
+        echo -e "${YELLOW}Команда для проверки статуса ноды:${NC}"
+        echo "cd ~/multipleforlinux && ./multiple-cli status"
+        echo -e "${PURPLE}-----------------------------------------------------------------------${NC}"
+        echo -e "${GREEN}Sk1fas Journey — вся крипта в одном месте!${NC}"
+        echo -e "${CYAN}Наш Telegram https://t.me/Sk1fasCryptoJourney${NC}"
+        sleep 2
+        cd && cd ~/multipleforlinux && ./multiple-cli status
         ;;
-    2) 
-        check_status
+
+    2)
+        # Проверка логов
+        echo -e "${BLUE}Проверяем статус...${NC}"
+        cd && cd ~/multipleforlinux && ./multiple-cli status
         ;;
-    3) 
-        remove_node
+
+    3)
+        echo -e "${BLUE}Удаление ноды...${NC}"
+
+        # Остановка процесса ноды
+        pkill -f multiple-node
+
+        # Удаление файлов ноды
+        cd ~
+        sudo rm -rf multipleforlinux
+
+        echo -e "${GREEN}Нода успешно удалена!${NC}"
+
+        # Завершающий вывод
+        echo -e "${PURPLE}-----------------------------------------------------------------------${NC}"
+        echo -e "${GREEN}Sk1fas Journey — вся крипта в одном месте!${NC}"
+        echo -e "${CYAN}Наш Telegram https://t.me/Sk1fasCryptoJourney${NC}"
+        sleep 1
         ;;
-    4)
-        echo -e "${CYAN}Выход из программы.${NC}"
-        ;;
+        
     *)
-        echo -e "${RED}Неверный выбор. Завершение программы.${NC}"
+        echo -e "${RED}Неверный выбор. Пожалуйста, введите номер от 1 до 3.${NC}"
         ;;
 esac
